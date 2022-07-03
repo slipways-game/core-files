@@ -463,8 +463,7 @@ class HyperdenseTradeRoutes(GlobalCondition):
 
     def new_trade_route(self, data):
         consumer = data["to"]
-        proj = consumer.Project
-        if not proj or proj.Kind.ID != "hyperdense_arch": return
+        if not consumer.HasProject(ProjectKind.All["hyperdense_arch"]): return
         route = data["route"]
         consumer = route.Consumer
         identical_routes = sum(1 for r in consumer.ImportRoutes if r.Producer == route.Producer and r.Resource == route.Resource)

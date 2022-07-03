@@ -3,13 +3,15 @@
 
 class OneRaceSectorType(GlobalCondition):
     def borrowed_techs(self):
-        return {
-            "baqar": ["geothermals", "mass_reactors", "gravitic_tugs"],
-            "silthid": ["mass_lensing", "extreme_mini", ("nanofabrication", "flexible_fabrication")],
-            "aphorian": ["brain_machine_interface", ("geoharvesting", "economic_zones"), "hyperdrive"],
-            "vattori": ["orbital_labs", "quantum_computing", "matter_transposition"],
-            "dendr": ["culture_hubs", "xenofoods", ("enlightenment", "genesis_cells")]
-        }
+        borrowed = {}
+        used = []
+        rng = game.RNG("borrowed")
+        races = Randomness.Shuffle(rng, Race.AllPlayable)
+        for race in races:
+            added = self.generate_borrowed_techs(race, used)
+            borrowed[race.ID] = [tk.ID for tk in added]
+            used += added
+        return borrowed
 
     def select_screen(self):
         return {
@@ -34,6 +36,14 @@ class OneRaceSectorType(GlobalCondition):
             perks += (p.ID for p in r.Perks)
         return perks
 
+    def generate_borrowed_techs(self, race, used):
+        patterns = ["012", "023", "024", "123", "124", "134", "234"]
+        rng = game.RNG("borrowed", race.ID)
+        pattern = Randomness.Pick(rng, patterns)
+        tp = TechParameters()
+        tp.Race = race
+        race_techs = list(game.Technology.Randomization.RandomTechs(tp, pattern, used, rng))
+        return race_techs
 
 class OneRaceSTMenuFlow:
     def pages(self):

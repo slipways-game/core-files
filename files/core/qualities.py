@@ -391,15 +391,20 @@ class InduceNeed(AnonymousHiddenQuality):
     def __init__(self, resource_id):
         self._resource = Resource.All[resource_id]
     def effects(self, node):
-        return [ChangeNeeds.AddOne(self._resource)]
+        return [ChangeNeeds.AddOne(self._resource, forced=True)]
 
 class DetermineUnknownOutput(AnonymousHiddenQuality):
-    def __init__(self, resource_id, limit_to_index = None):
+    def __init__(self, resource_id, once = True):
         self._resource = Resource.All[resource_id]
-        self._limit_to_index = limit_to_index
+        self._once = once
 
-    def effects(self, node):
-        return [ChangeProducts.DetermineOutput(self._resource, None, self._limit_to_index)]
+    def effects(self, _):
+        # strict comparison for backward compatibility with the index-based version
+        # self._once might be eg. = 0 when that was the index specified in the old version
+        if self._once is False: 
+            return [ChangeProducts.DetermineAllProducts(self._resource, None)]
+        else:
+            return [ChangeProducts.DetermineOneProduct(self._resource, None)]
 
 class CheatProduction(AnonymousHiddenQuality):
     def __init__(self, resource_id, amount):
@@ -408,4 +413,3 @@ class CheatProduction(AnonymousHiddenQuality):
 
     def effects(self, node):
         return [ChangeProducts.Add(self._amount, self._resource, "cheated")]
-

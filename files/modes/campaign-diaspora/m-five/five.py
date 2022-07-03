@@ -538,6 +538,7 @@ def event_advance_archive(evt):
         evt.AddChoice("Keep studying the archive." + final_effects)
     else:
         evt.AddChoice("Close the archive for now." + final_effects)
+    evt.AddChoice("Leave it for now.")
 
 def additional_funding(race_count):
     reward_bases = [0, 10, 12, 14, 16]

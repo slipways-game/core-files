@@ -38,7 +38,8 @@ class BaqarHubQuality(HubworldQuality):
     def race_id(self): return "baqar"
     def score_basis(self, node):
         wormhole = game.Nodes.FirstWithType("wormhole")
-        return (node.Position - wormhole.Position).magnitude / self._scale
+        ref_pos = wormhole.Position if wormhole else Vector2(0,0)
+        return (node.Position - ref_pos).magnitude / self._scale
     def score(self, node):
         return math.floor(self.score_basis(node))
     def basis_string(self, node): return "%.2f" % self.score_basis(node)

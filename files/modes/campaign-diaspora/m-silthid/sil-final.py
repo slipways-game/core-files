@@ -453,7 +453,8 @@ def event_complete_terminal_reversible(evt):
     bonus_effects = "" # " -> get(%d,$) -> get(%d,S)" % (constants.Int("sil.terminal.bonus.$"), constants.Int("sil.terminal.bonus.S"))
     evt.SetLocalizedText(LS("event.complete_terminal.%s" % chapter))
     evt.AddChoices(
-        "Finish the process. -> complete_terminal" + bonus_effects
+        "Finish the process. -> complete_terminal" + bonus_effects,
+        "Leave it for now."
     )
 
 class EffCompleteTerminal(ChoiceEffect):

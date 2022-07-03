@@ -84,6 +84,16 @@ def lab_count_researchers(node):
             researchers += needs[n].ImportCount
     return researchers
 
+def lab_upgrade(lab, industry, lv):
+    p = Permission.Yes()
+    if lab_study_subject(lab) is None:
+        p = p.Disallow(LS("structure.lab.no_study_subject"))
+    if lab_count_researchers(lab) == 0:
+        p = p.Disallow(LS("structure.lab.no_researchers"))
+    if p.Allowed and lab.HasUnmetNeeds:
+        p = Permission.NoWithNoReason() # fallback
+    return p
+
 def lab_output(node):
     return sum(1 for p in node.Products if p.Resource == Resource.Science)
 
@@ -391,7 +401,7 @@ def voidsynth_after_trade(me):
         # OK, this is it - let's turn our last output into this thing
         # the built-in VoidsynthOutputCount quality will then make another unknown output if that's possible
         unmet_resource = unmet_needs[0].AskingFor
-        quality = "DetermineUnknownOutput('%s', %d)" % (unmet_resource.ID, me.Products.Count - 1)
+        quality = "DetermineUnknownOutput('%s')" % unmet_resource.ID
         qualities.AttachForTheLifetimeOf(quality, me, connection)
         return
 

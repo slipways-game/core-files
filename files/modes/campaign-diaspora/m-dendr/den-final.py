@@ -63,7 +63,7 @@ class DMMEnoughSealed:
 
     def check_completion(self): 
         sealed = self.state()
-        return sealed[0] > self._required[0] and sealed[1] > self._required[1]
+        return sealed[0] >= self._required[0] and sealed[1] >= self._required[1]
 
     def state(self):
         sealed = [0, 0]

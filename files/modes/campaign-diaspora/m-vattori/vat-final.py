@@ -226,7 +226,9 @@ def add_more_stuff_inside_rifts():
 ###############################################################
 # Building restrictions
 
-GRACE_REGION = 0.005
+STRUCTURE_EXCLUSION_RANGE = 0.035
+GRACE_REGION = 0.0015
+CONNECTION_GRACE = 0.0005
 
 class ForbidCrossingEdges(GlobalCondition):
     def global_connection_validation(self, pc):
@@ -263,18 +265,26 @@ class ShifterCrossingRules(GlobalCondition):
 def is_connection_in_out(pc):
     if isinstance(pc, PlannedConnection):
         a, b = pc.StartPoint, pc.EndPoint
+        sn, en = pc.StartNode, pc.EndNode
     else:
-        a, b = pc.From.Position, pc.To.Position     
+        a, b = pc.From.Position, pc.To.Position
+        sn, en = pc.From, pc.To
     length = (b - a).magnitude
-    step = ((b - a) / length) * f(0.1)
-    step_count = int(math.floor(length / 0.1))
-    pos = a
+    step_count = int(math.ceil(length / 0.1))
+    step = (b - a) / step_count
+    pos = a + step
+    moves = step_count - 1
+    if sn and sn.NodeType == "structure.phase_shifter":
+        moves -= 3
+        pos += 3 * step
+    if en and en.NodeType == "structure.phase_shifter":
+        moves -= 3
     has_ins, has_outs = False, False
-    for i in range(step_count):
+    for _ in range(moves):
         value = regions.ValueAt(pos)
-        if value <= -GRACE_REGION: 
+        if value <= -CONNECTION_GRACE: 
             has_outs = True
-        elif value >= GRACE_REGION: 
+        elif value >= CONNECTION_GRACE: 
             has_ins = True
         if has_ins and has_outs:
             return has_ins, has_outs
@@ -291,7 +301,7 @@ class RestrictStructures(GlobalCondition):
         value = regions.ValueAt(pos)        
         if value >= 0.0 and ps.Kind.ID in self.FORBIDDEN_STRUCTURES:
             return Permission.No(LS("structure.placement.not_inside_rift"))
-        if value >= -5 * GRACE_REGION and value <= 5 * GRACE_REGION and ps.Kind.ID != "phase_shifter":
+        if value >= -STRUCTURE_EXCLUSION_RANGE and value <= STRUCTURE_EXCLUSION_RANGE and ps.Kind.ID != "phase_shifter":
             return Permission.No(LS("structure.placement.not_on_rift_edge"))
         return Permission.Yes()
 

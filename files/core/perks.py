@@ -417,36 +417,54 @@ class PerkSurplus(GlobalCondition):
         ci = CondInfo()
         ci.FullDescription = LS("perk.surplus.desc", None, self._cash_discount)
         return ci
-    
+
+    def activate(self):
+        self.react_to(Trigger.ConnectionBuilt, self.new_connection)
+
     def global_cost_adjustment(self, thing):
         if isinstance(thing, PlannedConnection):
             return self.adjust_connection_cost
         return None
 
+    def new_connection(self, data):
+        planned = data["planned"]
+        if planned and planned.CustomData.Has("marked_off"):
+            marked = planned.CustomData.Get("marked_off")
+            update = ConsUpdateNodeData()
+            for node, resource in marked:
+                key = "xcs_" + resource
+                update.add(node, key, True)
+            update.issue()
+
     def adjust_connection_cost(self, cost, conn):
         a, b = conn.StartNode, conn.EndNode
-        if not a or not b: return cost
+        if not a or not b: 
+            conn.CustomData.Clear("marked_off")
+            return cost
         a_set = set([a])
         b_set = set([b])
         if a.RelaysConnections: a_set.update(game.Reachability.ReachableNodes(a))
         if b.RelaysConnections: b_set.update(game.Reachability.ReachableNodes(b))
         a_set.difference_update(b_set)
         b_set.difference_update(a_set)
-        delivers_second_unit = False
+        marked_off = set()    
         for an in a_set:
             for bn in b_set:
-                if self.check(an, bn) or self.check(bn, an):
-                    delivers_second_unit = True
-                    break
-        if delivers_second_unit:
+                marked_off.update(self.check(an, bn))
+                marked_off.update(self.check(bn, an))
+        if len(marked_off) > 0:
             cost = cost.Multiply(Resource.Cash, 1.0 - self._cash_discount * 0.01)
             cost = cost.ModifyTime(lambda months: months - 1)
-        return cost        
+            conn.CustomData.Set("marked_off", marked_off)
+        else:
+            conn.CustomData.Clear("marked_off")
+        return cost
 
     def check(self, src, dest):
-        if not dest.NodeType.startswith("planet."): return False
-        needs = [n for n in dest.Needs if n.ImportCount == 1]
-        for n in needs:
-            has_matching_product = any(p.Resource == n.MetWith for p in src.Products if p.IsReal and p.IsAvailable)
-            if has_matching_product: return True
-        return False
+        if not dest.NodeType.startswith("planet."): return
+        for n in dest.Needs:
+            if n.ImportCount != 1: continue
+            for p in src.Products:
+                if not (p.IsReal and p.IsAvailable): continue
+                if p.Resource == n.MetWith and not dest.CustomData.Has("xcs_" + p.Resource.ID):
+                    yield (dest, p.Resource.ID)

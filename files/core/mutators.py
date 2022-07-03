@@ -1002,7 +1002,11 @@ class QLowBirthRate:
     def name(self): return LS("mutator.low_birth_rate")
     def desc(self): return LS("mutator.low_birth_rate.desc")
     def applies(self, node):
-        return node.Level == -1 or (node.ActuallyProduces(Resource.People) and node.HasUnmetNeeds)
+        if node.Level == -1: return True
+        produces_people = node.ActuallyProduces(Resource.People)
+        if not produces_people: return False
+        has_unmet_industry_needs = any(node.HasUnmetNeedFor(ns.Resource) for ns in node.Industry.Needs)
+        return has_unmet_industry_needs
     def effects(self, node):
         if node.Level >= 0:
             p_produced = sum(1 for p in node.Industry.Products if p == Resource.People)
@@ -1032,6 +1036,7 @@ class QRobotDependence:
     def name(self): return LS("mutator.robot_dependence")
     def desc(self): return LS("mutator.robot_dependence.desc")
     def applies(self, node):
+        if not node.NodeType.startswith("planet."): return False
         return node.Level == -1 or (node.HasNeedFor(Resource.People))
     def effects(self, node):
         B = Resource.All["B"]
